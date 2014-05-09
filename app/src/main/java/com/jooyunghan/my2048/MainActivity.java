@@ -19,13 +19,14 @@ import java.util.List;
 
 public class MainActivity extends Activity implements GameView {
 
-    public static final int SIZE = 100;
+    private int SIZE = 150;
+    private int PADDING = 5;
+    private int TEXT_SIZE = 30;
     private final Game game = new Game(this);
     private GestureDetectorCompat mDetector;
     private FrameLayout container;
     private TimeInterpolator overshotInterpolator = new OvershootInterpolator();
-    static final int PADDING = 5;
-    int[] colors;
+    private int[] colors;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -33,8 +34,20 @@ public class MainActivity extends Activity implements GameView {
         setContentView(R.layout.activity_main);
         mDetector = new GestureDetectorCompat(this, new MyGestureListener());
         container = (FrameLayout)findViewById(R.id.container);
-        loadColors();
-        game.init();
+        container.post(new Runnable() {
+            @Override
+            public void run() {
+                loadColors();
+                initMetrics();
+                game.init();
+            }
+        });
+    }
+
+    private void initMetrics() {
+        SIZE = container.getWidth() / 4;
+        PADDING = (int)(SIZE * 0.05);
+        TEXT_SIZE = SIZE / 2;
     }
 
     private void loadColors() {
@@ -103,7 +116,7 @@ public class MainActivity extends Activity implements GameView {
 
     private View viewFor(int value) {
         TextView view = new TextView(this);
-        view.setTextSize(30);
+        view.setTextSize(TEXT_SIZE);
         view.setTextAlignment(TextView.TEXT_ALIGNMENT_CENTER);
         view.setText(value + "");
         view.setBackgroundColor(colorFor(value));
