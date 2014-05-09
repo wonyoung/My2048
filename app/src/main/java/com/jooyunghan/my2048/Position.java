@@ -11,4 +11,9 @@ public class Position {
         this.x = x;
         this.y = y;
     }
+
+    public Position next(Direction direction) {
+        return new Position(x + direction.x, y + direction.y);
+    }
+
 }

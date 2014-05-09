@@ -14,9 +14,6 @@ import android.view.animation.OvershootInterpolator;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
-import java.util.ArrayList;
-import java.util.List;
-
 
 public class MainActivity extends Activity implements GameView {
 
@@ -61,7 +58,9 @@ public class MainActivity extends Activity implements GameView {
                                float velocityX, float velocityY) {
             Log.d(DEBUG_TAG, "onFling: " + event1.toString()+event2.toString());
 
-            final Direction direction = getDirection(velocityX, velocityY);
+            float moveX = event2.getX() - event1.getX();
+            float moveY = event2.getY() - event1.getY();
+            final Direction direction = getDirection(moveX, moveY);
             game.process(direction);
 
             return true;
@@ -101,15 +100,15 @@ public class MainActivity extends Activity implements GameView {
             view.setY(cell.prev.y * 100 + padding);
             view.setX(cell.prev.x * 100 + padding);
             container.addView(view, 100 - padding*2, 100 - padding*2);
-            view.animate().setDuration(100).x(cell.x * 100 + padding).y(cell.y * 100 + padding);
+            view.animate().setDuration(100).x(cell.position.x * 100 + padding).y(cell.position.y * 100 + padding);
         } else {
             for (Cell old: cell.merged) {
                 addCell(old);
             }
             view.setScaleX(0);
             view.setScaleY(0);
-            view.setY(cell.y * 100 + padding);
-            view.setX(cell.x * 100 + padding);
+            view.setY(cell.position.y * 100 + padding);
+            view.setX(cell.position.x * 100 + padding);
             container.addView(view,  100 - padding*2, 100 - padding*2);
             view.animate().setStartDelay(100).setDuration(100).setInterpolator(overshotInterpolator).scaleX(1).scaleY(1);
         }
@@ -125,7 +124,6 @@ public class MainActivity extends Activity implements GameView {
 
         return colors[index - 1];
     }
-
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {

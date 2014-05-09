@@ -25,7 +25,7 @@ public class Game {
         List<Position> positions = getEmptyCellPositions();
         Position position = positions.get(rand.nextInt(positions.size()));
         int value = rand.nextInt(10) == 0 ? 4 : 2;
-        cells[position.x][position.y] = new Cell(value, position.x, position.y);
+        cells[position.x][position.y] = new Cell(value, position);
     }
 
     public void process(Direction direction) {
@@ -48,40 +48,36 @@ public class Game {
     }
 
     private int moveCell(Cell cell, Direction direction) {
-        int moveCount = 0;
-        while (true) {
-            int nextX = cell.x + direction.x;
-            int nextY = cell.y + direction.y;
-            if (isEmpty(nextX, nextY)) {
-                cells[cell.x][cell.y] = null;
-                cell.x = nextX;
-                cell.y = nextY;
-                cells[nextX][nextY] = cell;
-                moveCount++;
-            } else if (canMerge(cell, nextX, nextY)) {
-                cells[cell.x][cell.y] = null;
-                cell.x = nextX;
-                cell.y = nextY;
-                Cell old = cells[nextX][nextY];
-                cells[nextX][nextY] = new Cell(cell.value * 2, nextX, nextY);
-                cells[nextX][nextY].merge(cell, old);
-                moveCount++;
-                break;
-            } else {
-                break;
-            }
+        Position next = cell.position.next(direction);
+        if (isEmpty(next)) {
+            moveCellTo(cell, next);
+            return 1 + moveCell(cell, direction);
+        } else if (canMerge(cell, next)) {
+            mergeCell(cell, next);
+            return 1;
+        } else {
+            return 0;
         }
-
-        return moveCount;
     }
 
-    private boolean canMerge(Cell cell, int x, int y) {
-        return x >= 0 && y >= 0 && x < 4 && y < 4 && cells[x][y] != null &&
-                cells[x][y].value == cell.value && cells[x][y].prev != null;
+    private void mergeCell(Cell cell, Position next) {
+        cells[cell.position.x][cell.position.y] = null;
+        cells[next.x][next.y] = cell.mergeInto(cells[next.x][next.y]);
     }
 
-    private boolean isEmpty(int x, int y) {
-        return x >= 0 && y >= 0 && x < 4 && y < 4 && cells[x][y] == null;
+    private void moveCellTo(Cell cell, Position next) {
+        cells[cell.position.x][cell.position.y] = null;
+        cell.position = next;
+        cells[next.x][next.y] = cell;
+    }
+
+    private boolean canMerge(Cell cell, Position p) {
+        return p.x >= 0 && p.y >= 0 && p.x < 4 && p.y < 4 && cells[p.x][p.y] != null &&
+                cells[p.x][p.y].value == cell.value && cells[p.x][p.y].prev != null;
+    }
+
+    private boolean isEmpty(Position p) {
+        return p.x >= 0 && p.y >= 0 && p.x < 4 && p.y < 4 && cells[p.x][p.y] == null;
     }
 
 

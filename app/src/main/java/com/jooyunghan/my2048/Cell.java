@@ -8,24 +8,29 @@ import java.util.List;
  */
 public class Cell {
     public int value;
-    public int y;
-    public int x;
     public Position prev;
     public List<Cell> merged = new ArrayList<Cell>();
+    public Position position;
 
-    public Cell(int value, int x, int y) {
+    public Cell(int value, Position pos) {
         this.value = value;
-        this.x = x;
-        this.y = y;
+        this.position = pos;
     }
 
-    public void merge(Cell old1, Cell old2) {
-        this.merged.add(old1);
-        this.merged.add(old2);
+    /**
+     * mergeInto into `other` Cell's position
+     * @return new merged cell
+     */
+    public Cell mergeInto(Cell other) {
+        position = other.position;
+        Cell mergedCell = new Cell(value * 2, position);
+        mergedCell.merged.add(this);
+        mergedCell.merged.add(other);
+        return mergedCell;
     }
 
     public void prepareMove() {
-        prev = new Position(x, y);
+        prev = position;
         merged.clear();
     }
 }
