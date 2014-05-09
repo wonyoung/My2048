@@ -3,8 +3,6 @@ package com.jooyunghan.my2048;
 import android.animation.TimeInterpolator;
 import android.app.Activity;
 import android.content.res.TypedArray;
-import android.graphics.Color;
-import android.graphics.Interpolator;
 import android.os.Bundle;
 import android.support.v4.view.GestureDetectorCompat;
 import android.util.Log;
@@ -17,36 +15,18 @@ import android.widget.FrameLayout;
 import android.widget.TextView;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Random;
 
 
-public class MainActivity extends Activity  {
+public class MainActivity extends Activity implements GameView {
 
+    private final Game game = new Game(this);
     private GestureDetectorCompat mDetector;
-    int position = 0;
-    private Cell[][] cells = new Cell[4][4];
     private FrameLayout container;
-    private Random rand = new Random();
     private TimeInterpolator overshotInterpolator = new OvershootInterpolator();
     static final int padding = 5;
     int[] colors;
-    enum Direction {
-        X(1,0), _X(-1,0), Y(0,1), _Y(0,-1);
-        private final int x;
-        private final int y;
 
-        Direction(int x, int y) {
-            this.x = x;
-            this.y = y;
-        }
-
-        public boolean positive() {
-            return x + y > 0;
-        }
-    }
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -54,9 +34,7 @@ public class MainActivity extends Activity  {
         mDetector = new GestureDetectorCompat(this, new MyGestureListener());
         container = (FrameLayout)findViewById(R.id.container);
         loadColors();
-        addNewTile();
-        addNewTile();
-        render();
+        game.init();
     }
 
     private void loadColors() {
@@ -84,104 +62,12 @@ public class MainActivity extends Activity  {
             Log.d(DEBUG_TAG, "onFling: " + event1.toString()+event2.toString());
 
             final Direction direction = getDirection(velocityX, velocityY);
-            process(direction);
+            game.process(direction);
 
             return true;
         }
     }
 
-    private void process(Direction direction) {
-
-        int moveCount = 0;
-        for (Cell cell: getCells(direction)) {
-            cell.prepareMove();
-            moveCount += moveCell(cell, direction);
-        }
-
-        if (moveCount > 0) {
-            addNewTile();
-            render();
-        }
-    }
-
-    private List<Cell> getCells(Direction direction) {
-        final List<Cell> cells = new ArrayList<Cell>();
-        forEachCells(new CellHandler() {
-            @Override
-            public void handle(int x, int y, Cell cell) {
-                if (cell != null) {
-                    cells.add(cell);
-                }
-            }
-        });
-        if (direction.positive()) {
-            Collections.reverse(cells);
-        }
-        return cells;
-    }
-
-    private int moveCell(Cell cell, Direction direction) {
-        int moveCount = 0;
-        while (true) {
-            int nextX = cell.x + direction.x;
-            int nextY = cell.y + direction.y;
-            if (isEmpty(nextX, nextY)) {
-                cells[cell.x][cell.y] = null;
-                cell.x = nextX;
-                cell.y = nextY;
-                cells[nextX][nextY] = cell;
-                moveCount++;
-            } else if (canMerge(cell, nextX, nextY)) {
-                cells[cell.x][cell.y] = null;
-                cell.x = nextX;
-                cell.y = nextY;
-                Cell old = cells[nextX][nextY];
-                cells[nextX][nextY] = new Cell(cell.value * 2, nextX, nextY);
-                cells[nextX][nextY].merge(cell, old);
-                moveCount++;
-                break;
-            } else {
-                break;
-            }
-        }
-
-        return moveCount;
-    }
-
-    private boolean canMerge(Cell cell, int nextX, int nextY) {
-        return nextX >= 0 && nextY >= 0 && nextX < 4 && nextY < 4 && cells[nextX][nextY] != null && cells[nextX][nextY].value == cell.value && cells[nextX][nextY].prev != null;
-    }
-
-    private boolean isEmpty(int nextX, int nextY) {
-        return  nextX >= 0 && nextY >= 0 && nextX < 4 && nextY < 4 && cells[nextX][nextY] == null;
-    }
-
-    private void addNewTile() {
-        ArrayList<Position> positions = gatherEmptyCells();
-        Position position = positions.get(rand.nextInt(positions.size()));
-        int value = rand.nextInt(10) == 0 ? 4 : 2;
-        cells[position.x][position.y] = new Cell(value, position.x, position.y);
-    }
-
-    private ArrayList<Position> gatherEmptyCells() {
-        final ArrayList<Position> positions = new ArrayList<Position>();
-        forEachCells(new CellHandler() {
-            @Override
-            public void handle(int x, int y, Cell cell) {
-                if (cell == null)
-                    positions.add(new Position(x, y));
-            }
-        });
-        return positions;
-    }
-
-    private void forEachCells(CellHandler handler) {
-        for (int x = 0; x<4; x++) {
-            for (int y=0; y<4; y++) {
-                handler.handle(x, y, cells[x][y]);
-            }
-        }
-    }
 
     private Direction getDirection(float velocityX, float velocityY) {
         final Direction direction;
@@ -197,14 +83,11 @@ public class MainActivity extends Activity  {
         return direction;
     }
 
-    private void render() {
+    public void render() {
         container.removeAllViews();
 
-        for(Cell[] row: cells) {
-            for (Cell cell: row) {
-                if (cell != null)
-                    addCell(cell);
-            }
+        for(Cell cell: game.getNotNullCells()) {
+             addCell(cell);
         }
     }
 
