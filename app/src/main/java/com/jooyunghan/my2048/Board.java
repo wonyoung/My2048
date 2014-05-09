@@ -17,8 +17,7 @@ public class Board {
     public Cell get(Position p) {
         if (p.x >= 0 && p.y >= 0 && p.x < 4 && p.y < 4)
             return cells[p.x][p.y];
-        else
-            return null;
+        return null;
     }
 
     public boolean isEmpty(Position p) {

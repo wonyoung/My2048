@@ -7,6 +7,7 @@ import android.graphics.drawable.ShapeDrawable;
 import android.graphics.drawable.shapes.RoundRectShape;
 import android.os.Bundle;
 import android.support.v4.view.GestureDetectorCompat;
+import android.util.TypedValue;
 import android.view.GestureDetector;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -30,7 +31,7 @@ public class MainActivity extends Activity implements GameView {
     private FrameLayout container;
     private TimeInterpolator overshotInterpolator = new OvershootInterpolator();
     private int[] colors;
-    private RoundRectShape rect;
+    private RoundRectShape roundRectShape;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,6 +44,7 @@ public class MainActivity extends Activity implements GameView {
             public void run() {
                 initMetrics();
                 loadColors();
+                prepareBackground();
                 game.init();
             }
         });
@@ -62,6 +64,12 @@ public class MainActivity extends Activity implements GameView {
             colors[i] = ta.getColor(i, 0);
         }
         ta.recycle();
+    }
+
+    private void prepareBackground() {
+        roundRectShape = new RoundRectShape(
+                new float[]{ROUND_RADIUS, ROUND_RADIUS, ROUND_RADIUS, ROUND_RADIUS, ROUND_RADIUS,
+                        ROUND_RADIUS, ROUND_RADIUS, ROUND_RADIUS}, null, null);
     }
 
     @Override
@@ -121,16 +129,11 @@ public class MainActivity extends Activity implements GameView {
     private View viewFor(int value) {
         TextView view = new TextView(this);
 
-        view.setTextSize(TEXT_SIZE);
+        view.setTextSize(TypedValue.COMPLEX_UNIT_PX, TEXT_SIZE);
         view.setTextAlignment(TextView.TEXT_ALIGNMENT_CENTER);
         view.setText(value + "");
 
-        if (rect == null) {
-            rect = new RoundRectShape(
-                    new float[]{ROUND_RADIUS, ROUND_RADIUS, ROUND_RADIUS, ROUND_RADIUS, ROUND_RADIUS,
-                            ROUND_RADIUS, ROUND_RADIUS, ROUND_RADIUS}, null, null);
-        }
-        ShapeDrawable bg = new ShapeDrawable(rect);
+        ShapeDrawable bg = new ShapeDrawable(roundRectShape);
         bg.getPaint().setColor(colorFor(value));
         view.setBackgroundDrawable(bg);
 
@@ -165,24 +168,4 @@ public class MainActivity extends Activity implements GameView {
 
         return colors[index - 1];
     }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.main, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-        if (id == R.id.action_settings) {
-            return true;
-        }
-        return super.onOptionsItemSelected(item);
-    }
-
 }
