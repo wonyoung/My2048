@@ -17,20 +17,19 @@ public class Cell {
         this.position = pos;
     }
 
-    /**
-     * mergeInto into `other` Cell's position
-     * @return new merged cell
-     */
-    public Cell mergeInto(Cell other) {
-        position = other.position;
-        Cell mergedCell = new Cell(value * 2, position);
-        mergedCell.merged.add(this);
-        mergedCell.merged.add(other);
+    public static Cell merge(Cell cell1, Cell cell2) {
+        Cell mergedCell = new Cell(cell1.value * 2, cell1.position);
+        mergedCell.merged.add(cell1);
+        mergedCell.merged.add(cell2);
         return mergedCell;
     }
 
     public void prepareMove() {
         prev = position;
         merged.clear();
+    }
+
+    public boolean canMerge(Cell other) {
+        return other != null && value == other.value && other.prev != null;
     }
 }

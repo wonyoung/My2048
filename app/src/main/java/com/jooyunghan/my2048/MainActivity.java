@@ -5,23 +5,26 @@ import android.app.Activity;
 import android.content.res.TypedArray;
 import android.os.Bundle;
 import android.support.v4.view.GestureDetectorCompat;
-import android.util.Log;
 import android.view.GestureDetector;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
+import android.view.View;
 import android.view.animation.OvershootInterpolator;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
+import java.util.List;
+
 
 public class MainActivity extends Activity implements GameView {
 
+    public static final int SIZE = 100;
     private final Game game = new Game(this);
     private GestureDetectorCompat mDetector;
     private FrameLayout container;
     private TimeInterpolator overshotInterpolator = new OvershootInterpolator();
-    static final int padding = 5;
+    static final int PADDING = 5;
     int[] colors;
 
     @Override
@@ -45,7 +48,7 @@ public class MainActivity extends Activity implements GameView {
     }
 
     @Override
-    public boolean onTouchEvent(MotionEvent event){
+    public boolean onTouchEvent(MotionEvent event) {
         this.mDetector.onTouchEvent(event);
         return super.onTouchEvent(event);
     }
@@ -54,65 +57,72 @@ public class MainActivity extends Activity implements GameView {
         private static final String DEBUG_TAG = "Gestures";
 
         @Override
-        public boolean onFling(MotionEvent event1, MotionEvent event2,
-                               float velocityX, float velocityY) {
-            Log.d(DEBUG_TAG, "onFling: " + event1.toString()+event2.toString());
-
-            float moveX = event2.getX() - event1.getX();
-            float moveY = event2.getY() - event1.getY();
-            final Direction direction = getDirection(moveX, moveY);
-            game.process(direction);
-
+        public boolean onFling(MotionEvent event1, MotionEvent event2, float velocityX,
+                               float velocityY) {
+            float dx = event2.getX() - event1.getX();
+            float dy = event2.getY() - event1.getY();
+            game.process(getDirection(dx, dy));
             return true;
         }
-    }
 
-
-    private Direction getDirection(float velocityX, float velocityY) {
-        final Direction direction;
-        if (velocityX > Math.abs(velocityY)) {
-            direction = Direction.X;
-        } else if (velocityX < -Math.abs(velocityY)) {
-            direction = Direction._X;
-        } else if (velocityY > Math.abs(velocityX)) {
-            direction = Direction.Y;
-        } else {
-            direction = Direction._Y;
+        private Direction getDirection(float dx, float dy) {
+            if (dx > Math.abs(dy)) {
+                return Direction.X;
+            } else if (dx < -Math.abs(dy)) {
+                return Direction._X;
+            } else if (dy > Math.abs(dx)) {
+                return Direction.Y;
+            } else {
+                return Direction._Y;
+            }
         }
-        return direction;
     }
 
-    public void render() {
+    @Override
+    public void render(List<Cell> cells) {
         container.removeAllViews();
 
-        for(Cell cell: game.getNotNullCells()) {
-             addCell(cell);
+        for (Cell cell : cells) {
+            addCell(cell);
         }
     }
 
     private void addCell(Cell cell) {
+        for (Cell old : cell.merged) {
+            addCell(old);
+        }
+
+        View view = viewFor(cell.value);
+        if (cell.prev != null) {
+            setTransitionAnimation(view, cell.prev, cell.position);
+        } else {
+            setShowAnimation(view, cell.position);
+        }
+        container.addView(view, SIZE - PADDING * 2, SIZE - PADDING * 2);
+    }
+
+    private View viewFor(int value) {
         TextView view = new TextView(this);
         view.setTextSize(30);
         view.setTextAlignment(TextView.TEXT_ALIGNMENT_CENTER);
-        view.setText(cell.value + "");
-        view.setBackgroundColor(colorFor(cell.value));
-        if (cell.prev != null) {
-            view.setY(cell.prev.y * 100 + padding);
-            view.setX(cell.prev.x * 100 + padding);
-            container.addView(view, 100 - padding*2, 100 - padding*2);
-            view.animate().setDuration(100).x(cell.position.x * 100 + padding).y(cell.position.y * 100 + padding);
-        } else {
-            for (Cell old: cell.merged) {
-                addCell(old);
-            }
-            view.setScaleX(0);
-            view.setScaleY(0);
-            view.setY(cell.position.y * 100 + padding);
-            view.setX(cell.position.x * 100 + padding);
-            container.addView(view,  100 - padding*2, 100 - padding*2);
-            view.animate().setStartDelay(100).setDuration(100).setInterpolator(overshotInterpolator).scaleX(1).scaleY(1);
-        }
+        view.setText(value + "");
+        view.setBackgroundColor(colorFor(value));
+        return view;
+    }
 
+    private void setTransitionAnimation(View view, Position from, Position to) {
+        view.setY(from.y * SIZE + PADDING);
+        view.setX(from.x * SIZE + PADDING);
+        view.animate().setDuration(100).x(to.x * SIZE + PADDING).y(to.y * SIZE + PADDING);
+    }
+
+    private void setShowAnimation(View view, Position position) {
+        view.setScaleX(0);
+        view.setScaleY(0);
+        view.setY(position.y * SIZE + PADDING);
+        view.setX(position.x * SIZE + PADDING);
+        view.animate().setStartDelay(100).setDuration(100).setInterpolator(overshotInterpolator)
+                .scaleX(1).scaleY(1);
     }
 
     private int colorFor(int value) {
