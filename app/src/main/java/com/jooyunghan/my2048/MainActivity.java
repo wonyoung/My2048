@@ -3,6 +3,8 @@ package com.jooyunghan.my2048;
 import android.animation.TimeInterpolator;
 import android.app.Activity;
 import android.content.res.TypedArray;
+import android.graphics.drawable.ShapeDrawable;
+import android.graphics.drawable.shapes.RoundRectShape;
 import android.os.Bundle;
 import android.support.v4.view.GestureDetectorCompat;
 import android.view.GestureDetector;
@@ -19,6 +21,7 @@ import java.util.List;
 
 public class MainActivity extends Activity implements GameView {
 
+    private int ROUND_RADIUS = 30;
     private int SIZE = 150;
     private int PADDING = 5;
     private int TEXT_SIZE = 30;
@@ -27,6 +30,7 @@ public class MainActivity extends Activity implements GameView {
     private FrameLayout container;
     private TimeInterpolator overshotInterpolator = new OvershootInterpolator();
     private int[] colors;
+    private RoundRectShape rect;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,11 +38,11 @@ public class MainActivity extends Activity implements GameView {
         setContentView(R.layout.activity_main);
         mDetector = new GestureDetectorCompat(this, new MyGestureListener());
         container = (FrameLayout)findViewById(R.id.container);
-        container.post(new Runnable() {
+        container.post(new Runnable() { // after view loaded
             @Override
             public void run() {
-                loadColors();
                 initMetrics();
+                loadColors();
                 game.init();
             }
         });
@@ -46,13 +50,13 @@ public class MainActivity extends Activity implements GameView {
 
     private void initMetrics() {
         SIZE = container.getWidth() / 4;
-        PADDING = (int)(SIZE * 0.05);
+        PADDING = SIZE / 20;
         TEXT_SIZE = SIZE / 2;
+        ROUND_RADIUS = SIZE / 10;
     }
 
     private void loadColors() {
         TypedArray ta = getResources().obtainTypedArray(R.array.colors);
-
         colors = new int[ta.length()];
         for (int i = 0; i < ta.length(); i++) {
             colors[i] = ta.getColor(i, 0);
@@ -111,15 +115,25 @@ public class MainActivity extends Activity implements GameView {
         } else {
             setShowAnimation(view, cell.position);
         }
-        container.addView(view, SIZE - PADDING * 2, SIZE - PADDING * 2);
+        add(view);
     }
 
     private View viewFor(int value) {
         TextView view = new TextView(this);
+
         view.setTextSize(TEXT_SIZE);
         view.setTextAlignment(TextView.TEXT_ALIGNMENT_CENTER);
         view.setText(value + "");
-        view.setBackgroundColor(colorFor(value));
+
+        if (rect == null) {
+            rect = new RoundRectShape(
+                    new float[]{ROUND_RADIUS, ROUND_RADIUS, ROUND_RADIUS, ROUND_RADIUS, ROUND_RADIUS,
+                            ROUND_RADIUS, ROUND_RADIUS, ROUND_RADIUS}, null, null);
+        }
+        ShapeDrawable bg = new ShapeDrawable(rect);
+        bg.getPaint().setColor(colorFor(value));
+        view.setBackgroundDrawable(bg);
+
         return view;
     }
 
@@ -136,6 +150,10 @@ public class MainActivity extends Activity implements GameView {
         view.setX(position.x * SIZE + PADDING);
         view.animate().setStartDelay(100).setDuration(100).setInterpolator(overshotInterpolator)
                 .scaleX(1).scaleY(1);
+    }
+
+    private void add(View view) {
+        container.addView(view, SIZE - PADDING * 2, SIZE - PADDING * 2);
     }
 
     private int colorFor(int value) {
