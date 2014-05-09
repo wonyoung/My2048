@@ -2,6 +2,7 @@ package com.jooyunghan.my2048;
 
 import android.animation.TimeInterpolator;
 import android.app.Activity;
+import android.content.res.TypedArray;
 import android.graphics.Color;
 import android.graphics.Interpolator;
 import android.os.Bundle;
@@ -16,7 +17,9 @@ import android.widget.FrameLayout;
 import android.widget.TextView;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Random;
 
 
@@ -29,7 +32,7 @@ public class MainActivity extends Activity  {
     private Random rand = new Random();
     private TimeInterpolator overshotInterpolator = new OvershootInterpolator();
     static final int padding = 5;
-
+    int[] colors;
     enum Direction {
         X(1,0), _X(-1,0), Y(0,1), _Y(0,-1);
         private final int x;
@@ -50,9 +53,20 @@ public class MainActivity extends Activity  {
         setContentView(R.layout.activity_main);
         mDetector = new GestureDetectorCompat(this, new MyGestureListener());
         container = (FrameLayout)findViewById(R.id.container);
+        loadColors();
         addNewTile();
         addNewTile();
         render();
+    }
+
+    private void loadColors() {
+        TypedArray ta = getResources().obtainTypedArray(R.array.colors);
+
+        colors = new int[ta.length()];
+        for (int i = 0; i < ta.length(); i++) {
+            colors[i] = ta.getColor(i, 0);
+        }
+        ta.recycle();
     }
 
     @Override
@@ -77,37 +91,36 @@ public class MainActivity extends Activity  {
     }
 
     private void process(Direction direction) {
-        prepareMove();
-        boolean move = false;
 
-        if (direction.positive()) {
-            for (int x=3; x>=0; x--) {
-                for (int y=3; y>=0; y--) {
-                    Cell cell = cells[x][y];
-                    if (cell != null)
-                        move |= moveCell(cell, direction);
-                }
-            }
-        } else {
-
-            for (int x=0; x<4; x++) {
-                for (int y=0; y<4; y++) {
-                    Cell cell = cells[x][y];
-                    if (cell != null)
-                        move |= moveCell(cell, direction);
-                }
-            }
+        int moveCount = 0;
+        for (Cell cell: getCells(direction)) {
+            cell.prepareMove();
+            moveCount += moveCell(cell, direction);
         }
 
-
-        if (move) {
+        if (moveCount > 0) {
             addNewTile();
             render();
         }
-
     }
 
-    private boolean moveCell(Cell cell, Direction direction) {
+    private List<Cell> getCells(Direction direction) {
+        final List<Cell> cells = new ArrayList<Cell>();
+        forEachCells(new CellHandler() {
+            @Override
+            public void handle(int x, int y, Cell cell) {
+                if (cell != null) {
+                    cells.add(cell);
+                }
+            }
+        });
+        if (direction.positive()) {
+            Collections.reverse(cells);
+        }
+        return cells;
+    }
+
+    private int moveCell(Cell cell, Direction direction) {
         int moveCount = 0;
         while (true) {
             int nextX = cell.x + direction.x;
@@ -132,7 +145,7 @@ public class MainActivity extends Activity  {
             }
         }
 
-        return moveCount > 0;
+        return moveCount;
     }
 
     private boolean canMerge(Cell cell, int nextX, int nextY) {
@@ -141,18 +154,6 @@ public class MainActivity extends Activity  {
 
     private boolean isEmpty(int nextX, int nextY) {
         return  nextX >= 0 && nextY >= 0 && nextX < 4 && nextY < 4 && cells[nextX][nextY] == null;
-    }
-
-    private void prepareMove() {
-        forEachCells(new CellHandler() {
-            @Override
-            public void handle(int x, int y, Cell cell) {
-                if (cell != null) {
-                    cell.prev = new Position(x, y);
-                    cell.merged.clear();
-                }
-            }
-        });
     }
 
     private void addNewTile() {
@@ -209,13 +210,15 @@ public class MainActivity extends Activity  {
 
     private void addCell(Cell cell) {
         TextView view = new TextView(this);
+        view.setTextSize(30);
+        view.setTextAlignment(TextView.TEXT_ALIGNMENT_CENTER);
         view.setText(cell.value + "");
-        view.setBackgroundColor(Color.BLUE);
+        view.setBackgroundColor(colorFor(cell.value));
         if (cell.prev != null) {
             view.setY(cell.prev.y * 100 + padding);
             view.setX(cell.prev.x * 100 + padding);
             container.addView(view, 100 - padding*2, 100 - padding*2);
-            view.animate().x(cell.x * 100 + padding).y(cell.y * 100 + padding);
+            view.animate().setDuration(100).x(cell.x * 100 + padding).y(cell.y * 100 + padding);
         } else {
             for (Cell old: cell.merged) {
                 addCell(old);
@@ -225,9 +228,19 @@ public class MainActivity extends Activity  {
             view.setY(cell.y * 100 + padding);
             view.setX(cell.x * 100 + padding);
             container.addView(view,  100 - padding*2, 100 - padding*2);
-            view.animate().setStartDelay(200).setInterpolator(overshotInterpolator).scaleX(1).scaleY(1);
+            view.animate().setStartDelay(100).setDuration(100).setInterpolator(overshotInterpolator).scaleX(1).scaleY(1);
         }
 
+    }
+
+    private int colorFor(int value) {
+        int index = 0;
+        while (value > 0 && index < colors.length) {
+            value >>= 1;
+            index++;
+        }
+
+        return colors[index - 1];
     }
 
 

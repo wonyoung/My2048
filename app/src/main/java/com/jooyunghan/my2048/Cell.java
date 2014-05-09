@@ -23,4 +23,9 @@ public class Cell {
         this.merged.add(old1);
         this.merged.add(old2);
     }
+
+    public void prepareMove() {
+        prev = new Position(x, y);
+        merged.clear();
+    }
 }
