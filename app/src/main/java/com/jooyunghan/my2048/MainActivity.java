@@ -9,6 +9,7 @@ import android.os.Bundle;
 import android.support.v4.view.GestureDetectorCompat;
 import android.util.TypedValue;
 import android.view.GestureDetector;
+import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
@@ -130,7 +131,8 @@ public class MainActivity extends Activity implements GameView {
         TextView view = new TextView(this);
 
         view.setTextSize(TypedValue.COMPLEX_UNIT_PX, TEXT_SIZE);
-        view.setTextAlignment(TextView.TEXT_ALIGNMENT_CENTER);
+        view.setGravity(Gravity.CENTER);
+
         view.setText(value + "");
 
         ShapeDrawable bg = new ShapeDrawable(roundRectShape);
