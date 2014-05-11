@@ -9,6 +9,7 @@ public class Game {
     private final GameView view;
     private Board board;
     private Random rand = new Random();
+    private int score;
 
     public Game(GameView view) {
         this.view = view;
@@ -19,6 +20,7 @@ public class Game {
         addNewTile();
         addNewTile();
         view.render(board.getCells());
+        score = 0;
     }
 
     private void addNewTile() {
@@ -46,6 +48,7 @@ public class Game {
         if (moveCount > 0) {
             addNewTile();
             view.render(board.getCells());
+            view.renderScore(score);
         }
     }
 
@@ -55,6 +58,7 @@ public class Game {
             moveCellTo(cell, next);
             return 1 + moveCell(cell, direction); // move further
         } else if (cell.canMerge(board.get(next))) {
+            score += cell.value * 2;
             mergeCellInto(cell, next);
             return 1;
         } else {

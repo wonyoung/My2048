@@ -1,5 +1,7 @@
 package com.jooyunghan.my2048;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
 import android.animation.TimeInterpolator;
 import android.app.Activity;
 import android.content.res.TypedArray;
@@ -14,6 +16,8 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
+import android.view.ViewParent;
 import android.view.animation.OvershootInterpolator;
 import android.widget.FrameLayout;
 import android.widget.TextView;
@@ -30,9 +34,11 @@ public class MainActivity extends Activity implements GameView {
     private final Game game = new Game(this);
     private GestureDetectorCompat mDetector;
     private FrameLayout container;
+    private TextView scoreTextView;
     private TimeInterpolator overshotInterpolator = new OvershootInterpolator();
     private int[] colors;
     private RoundRectShape roundRectShape;
+    private int oldScore;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,6 +46,7 @@ public class MainActivity extends Activity implements GameView {
         setContentView(R.layout.activity_main);
         mDetector = new GestureDetectorCompat(this, new MyGestureListener());
         container = (FrameLayout)findViewById(R.id.container);
+        scoreTextView = (TextView)findViewById(R.id.score);
         container.post(new Runnable() { // after view loaded
             @Override
             public void run() {
@@ -111,6 +118,32 @@ public class MainActivity extends Activity implements GameView {
         for (Cell cell : cells) {
             addCell(cell);
         }
+    }
+
+    @Override
+    public void renderScore(int score) {
+        int diff = score - oldScore;
+        oldScore = score;
+        scoreTextView.setText(score + "");
+
+        if (diff == 0)
+            return;
+        final TextView diffText = new TextView(this);
+        diffText.setText("+" + diff);
+
+        float textSize = scoreTextView.getTextSize();
+        diffText.setTextSize(TypedValue.COMPLEX_UNIT_PX, textSize);
+        final ViewGroup parent = (ViewGroup) scoreTextView.getParent();
+        diffText.setY(scoreTextView.getY());
+        diffText.setX(scoreTextView.getX());
+        diffText.animate().yBy(- textSize * 2).alpha(0f).setListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                parent.removeView(diffText);
+            }
+        });
+
+        parent.addView(diffText, 100, 100);
     }
 
     private void addCell(Cell cell) {

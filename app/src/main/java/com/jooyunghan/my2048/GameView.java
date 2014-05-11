@@ -7,4 +7,5 @@ import java.util.List;
  */
 public interface GameView {
     void render(List<Cell> cells);
+    void renderScore(int score);
 }
