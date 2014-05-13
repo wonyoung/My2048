@@ -78,4 +78,18 @@ public class Board {
         }
         return copy;
     }
+
+    public Cell mergeCellInto(Cell cell, Cell nextCell) {
+        Cell merged = Cell.merge(cell, nextCell);
+        put(cell.position, null);
+        put(nextCell.position, merged);
+        return merged;
+    }
+
+    public Cell moveCellTo(Cell cell, Position next) {
+        Cell cellMoved = cell.moveTo(next);
+        put(cell.position, null);
+        put(next, cellMoved);
+        return cellMoved;
+    }
 }
