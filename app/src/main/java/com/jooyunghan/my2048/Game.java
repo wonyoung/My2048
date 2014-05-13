@@ -10,7 +10,6 @@ public class Game {
     private Board board;
     private Random rand = new Random();
     private int score;
-    private boolean end = false;
     private ArrayList<GameState> history = new ArrayList<GameState>();
 
     public Game(GameView view) {
@@ -20,7 +19,6 @@ public class Game {
     public void init() {
         board = new Board();
         score = 0;
-        end = false;
         history.clear();
         addNewTile();
         addNewTile();
@@ -32,12 +30,16 @@ public class Game {
         Position position = positions.get(rand.nextInt(positions.size()));
         int value = rand.nextInt(10) == 0 ? 4 : 2;
 
-        Cell cell = new Cell(value, position);
+        Cell cell = new Cell(value, position, null);
         board.put(position, cell);
     }
 
     public void process(Direction direction) {
         int moveCount = 0;
+
+        GameState state = new GameState(board.copy(), score);
+
+        board.prepareMove();
 
         List<Cell> cells = board.getCells();
         if (direction.positive()) {
@@ -45,14 +47,16 @@ public class Game {
         }
 
         for (Cell cell : cells) {
-            cell.prepareMove();
             moveCount += moveCell(cell, direction);
         }
 
         if (moveCount > 0) {
+            history.add(state);
+
             addNewTile();
-            end = !canMove();
             view.render();
+        } else {
+            board = state.board;
         }
     }
 
@@ -79,8 +83,10 @@ public class Game {
         Position next = cell.position.next(direction);
         Cell nextCell = board.get(next);
         if (board.isEmpty(next)) {
-            moveCellTo(cell, next);
-            return 1 + moveCell(cell, direction); // move further
+            Cell cellMoved = cell.moveTo(next);
+            board.put(cell.position, null);
+            board.put(next, cellMoved);
+            return 1 + moveCell(cellMoved, direction); // move further
         } else if (nextCell != null && cell.canMerge(nextCell)) {
             mergeCellInto(cell, nextCell);
             return 1;
@@ -90,19 +96,9 @@ public class Game {
     }
 
 
-    private void moveCellTo(Cell cell, Position position) {
-        board.put(cell.position, null);
-        cell.position = position;
-
-        board.put(position, cell);
-    }
-
-
     private void mergeCellInto(Cell cell, Cell nextCell) {
         board.put(cell.position, null);
-        cell.position = nextCell.position;
-
-        board.put(cell.position, Cell.merge(cell, nextCell));
+        board.put(nextCell.position, Cell.merge(cell, nextCell));
 
         score += cell.value * 2;
     }
@@ -116,10 +112,14 @@ public class Game {
     }
 
     public boolean isEnd() {
-        return end;
+        return !canMove();
     }
 
     public void undo() {
+        GameState last = history.remove(history.size() - 1);
+        this.score = last.score;
+        view.renderUndo();
+        this.board = last.board;
     }
 
     public boolean isUndoable() {

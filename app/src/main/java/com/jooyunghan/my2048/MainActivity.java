@@ -15,7 +15,6 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.animation.AccelerateDecelerateInterpolator;
 import android.view.animation.LinearInterpolator;
 import android.view.animation.OvershootInterpolator;
 import android.widget.Button;
@@ -23,7 +22,6 @@ import android.widget.FrameLayout;
 import android.widget.TextView;
 
 import java.util.List;
-import java.util.concurrent.Callable;
 
 
 public class MainActivity extends Activity implements GameView {
@@ -41,6 +39,9 @@ public class MainActivity extends Activity implements GameView {
     private TimeInterpolator overshotInterpolator = new OvershootInterpolator();
     private TimeInterpolator translateInterpolator = new LinearInterpolator();
 
+    private CellAnimator animator;
+    private CellAnimator forwardAnimator = new ForwardAnimator();
+    private CellAnimator reverseAnimator = new ReverseAnimator();
     private int[] colors;
     private RoundRectShape roundRectShape;
     private int oldScore;
@@ -128,6 +129,15 @@ public class MainActivity extends Activity implements GameView {
 
     @Override
     public void render() {
+        animator = forwardAnimator;
+        renderCells(game.getCells());
+        renderScore(game.getScore());
+        renderControls();
+    }
+
+    @Override
+    public void renderUndo() {
+        animator = reverseAnimator;
         renderCells(game.getCells());
         renderScore(game.getScore());
         renderControls();
@@ -138,20 +148,11 @@ public class MainActivity extends Activity implements GameView {
     }
 
     private void renderCells(List<Cell> cells) {
-        recycleViews();
+        container.removeAllViews();
 
         for (Cell cell : cells) {
-            try {
-                addCellView(cell);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+            addCellView(cell);
         }
-    }
-
-    private void recycleViews() {
-        viewCacheList.reset();
-        container.removeAllViews();
     }
 
     private void renderScore(int score) {
@@ -179,21 +180,19 @@ public class MainActivity extends Activity implements GameView {
         parent.addView(diffText, 100, 100);
     }
 
-    private void addCellView(Cell cell) throws Exception {
+    private void addCellView(Cell cell) {
         for (Cell old : cell.merged) {
             addCellView(old);
         }
 
         View view = viewFor(cell.value);
-        if (cell.prev != null) {
-            setTransitionAnimation(view, cell.prev, cell.position);
+        if (cell.previous != null) {
+            animator.setTransition(view, cell);
         } else {
-            setShowAnimation(view, cell.position);
+            animator.setShow(view, cell);
         }
         add(view);
     }
-
-    private ViewCacheList viewCacheList = new ViewCacheList();
 
     private int indexOf(int value) {
         int index = 0;
@@ -204,19 +203,7 @@ public class MainActivity extends Activity implements GameView {
         return index - 1;
     }
 
-    private View viewFor(final int value) throws Exception {
-        int index = indexOf(value);
-
-        ViewCache viewCache = viewCacheList.get(index);
-        return viewCache.get(new Callable<View>() {
-            @Override
-            public View call() throws Exception {
-                return makeViewFor(value);
-            }
-        });
-    }
-
-    private View makeViewFor(int value) {
+    private View viewFor(final int value) {
         TextView view = new TextView(this);
 
         view.setTextSize(TypedValue.COMPLEX_UNIT_PX, TEXT_SIZE);
@@ -231,34 +218,51 @@ public class MainActivity extends Activity implements GameView {
         return view;
     }
 
-    private void setTransitionAnimation(View view, Position from, Position to) {
-        view.setY(from.y * SIZE + PADDING);
-        view.setX(from.x * SIZE + PADDING);
-        view.animate().setStartDelay(0).setDuration(100).setInterpolator(translateInterpolator).x(
-                to.x * SIZE + PADDING).y(to.y * SIZE + PADDING);
-    }
-
-    private void setShowAnimation(View view, Position position) {
-        view.setScaleX(0);
-        view.setScaleY(0);
-        view.setY(position.y * SIZE + PADDING);
-        view.setX(position.x * SIZE + PADDING);
-        view.animate().setStartDelay(100).setDuration(100).setInterpolator(overshotInterpolator)
-                .scaleX(1).scaleY(1);
-    }
-
     private void add(View view) {
         container.addView(view, SIZE - PADDING * 2, SIZE - PADDING * 2);
     }
 
     private int colorFor(int value) {
-        int index = 0;
-        while (value > 0 && index < colors.length) {
-            value >>= 1;
-            index++;
-        }
-
-        return colors[index - 1];
+        return colors[indexOf(value)];
     }
 
+    private class ForwardAnimator implements CellAnimator {
+        @Override
+        public void setTransition(View view, Cell cell) {
+            view.setY(cell.previous.y * SIZE + PADDING);
+            view.setX(cell.previous.x * SIZE + PADDING);
+            view.animate().setStartDelay(0).setDuration(100).setInterpolator(translateInterpolator).x(
+                    cell.position.x * SIZE + PADDING).y(cell.position.y * SIZE + PADDING);
+        }
+
+        @Override
+        public void setShow(View view, Cell cell) {
+            view.setScaleX(0);
+            view.setScaleY(0);
+            view.setY(cell.position.y * SIZE + PADDING);
+            view.setX(cell.position.x * SIZE + PADDING);
+            view.animate().setStartDelay(100).setDuration(100).setInterpolator(overshotInterpolator)
+                    .scaleX(1).scaleY(1);
+        }
+    }
+
+    private class ReverseAnimator implements CellAnimator {
+        @Override
+        public void setTransition(View view, Cell cell) {
+            view.setY(cell.position.y * SIZE + PADDING);
+            view.setX(cell.position.x * SIZE + PADDING);
+            view.animate().setStartDelay(100).setDuration(100).setInterpolator(translateInterpolator).x(
+                    cell.previous.x * SIZE + PADDING).y(cell.previous.y * SIZE + PADDING);
+        }
+
+        @Override
+        public void setShow(View view, Cell cell) {
+            view.setScaleX(1);
+            view.setScaleY(1);
+            view.setY(cell.position.y * SIZE + PADDING);
+            view.setX(cell.position.x * SIZE + PADDING);
+            view.animate().setStartDelay(0).setDuration(100).setInterpolator(translateInterpolator)
+                    .scaleX(0).scaleY(0);
+        }
+    }
 }

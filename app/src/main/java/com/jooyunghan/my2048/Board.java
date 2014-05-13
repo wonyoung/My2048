@@ -57,4 +57,25 @@ public class Board {
         });
         return cells;
     }
+
+    public void prepareMove() {
+        for (int x = 0; x < 4; x++) {
+            for (int y = 0; y < 4; y++) {
+                Cell cell = cells[x][y];
+                if (cell == null)
+                    continue;
+                cells[x][y] = new Cell(cell.value, cell.position, cell.position);
+            }
+        }
+    }
+
+    public Board copy() {
+        Board copy = new Board();
+        for (int x = 0; x < 4; x++) {
+            for (int y = 0; y < 4; y++) {
+                copy.cells[x][y] = cells[x][y];
+            }
+        }
+        return copy;
+    }
 }

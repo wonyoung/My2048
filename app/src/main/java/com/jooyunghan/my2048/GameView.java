@@ -7,4 +7,6 @@ import java.util.List;
  */
 public interface GameView {
     void render();
+
+    void renderUndo();
 }
