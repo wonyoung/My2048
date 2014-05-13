@@ -12,17 +12,17 @@ import android.support.v4.view.GestureDetectorCompat;
 import android.util.TypedValue;
 import android.view.GestureDetector;
 import android.view.Gravity;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.ViewParent;
+import android.view.animation.AccelerateDecelerateInterpolator;
+import android.view.animation.LinearInterpolator;
 import android.view.animation.OvershootInterpolator;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
 import java.util.List;
+import java.util.concurrent.Callable;
 
 
 public class MainActivity extends Activity implements GameView {
@@ -36,6 +36,8 @@ public class MainActivity extends Activity implements GameView {
     private FrameLayout container;
     private TextView scoreTextView;
     private TimeInterpolator overshotInterpolator = new OvershootInterpolator();
+    private TimeInterpolator translateInterpolator = new LinearInterpolator();
+
     private int[] colors;
     private RoundRectShape roundRectShape;
     private int oldScore;
@@ -113,11 +115,20 @@ public class MainActivity extends Activity implements GameView {
 
     @Override
     public void render(List<Cell> cells) {
-        container.removeAllViews();
+        recycleViews();
 
         for (Cell cell : cells) {
-            addCell(cell);
+            try {
+                addCellView(cell);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
+    }
+
+    private void recycleViews() {
+        viewCacheList.reset();
+        container.removeAllViews();
     }
 
     @Override
@@ -146,9 +157,9 @@ public class MainActivity extends Activity implements GameView {
         parent.addView(diffText, 100, 100);
     }
 
-    private void addCell(Cell cell) {
+    private void addCellView(Cell cell) throws Exception {
         for (Cell old : cell.merged) {
-            addCell(old);
+            addCellView(old);
         }
 
         View view = viewFor(cell.value);
@@ -160,7 +171,30 @@ public class MainActivity extends Activity implements GameView {
         add(view);
     }
 
-    private View viewFor(int value) {
+    private ViewCacheList viewCacheList = new ViewCacheList();
+
+    private int indexOf(int value) {
+        int index = 0;
+        while (value > 0 && index < colors.length) {
+            value >>= 1;
+            index++;
+        }
+        return index - 1;
+    }
+
+    private View viewFor(final int value) throws Exception {
+        int index = indexOf(value);
+
+        ViewCache viewCache = viewCacheList.get(index);
+        return viewCache.get(new Callable<View>() {
+            @Override
+            public View call() throws Exception {
+                return makeViewFor(value);
+            }
+        });
+    }
+
+    private View makeViewFor(int value) {
         TextView view = new TextView(this);
 
         view.setTextSize(TypedValue.COMPLEX_UNIT_PX, TEXT_SIZE);
@@ -178,7 +212,8 @@ public class MainActivity extends Activity implements GameView {
     private void setTransitionAnimation(View view, Position from, Position to) {
         view.setY(from.y * SIZE + PADDING);
         view.setX(from.x * SIZE + PADDING);
-        view.animate().setDuration(100).x(to.x * SIZE + PADDING).y(to.y * SIZE + PADDING);
+        view.animate().setStartDelay(0).setDuration(100).setInterpolator(translateInterpolator).x(
+                to.x * SIZE + PADDING).y(to.y * SIZE + PADDING);
     }
 
     private void setShowAnimation(View view, Position position) {
