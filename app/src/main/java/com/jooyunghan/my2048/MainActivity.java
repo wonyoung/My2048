@@ -18,6 +18,7 @@ import android.view.ViewGroup;
 import android.view.animation.AccelerateDecelerateInterpolator;
 import android.view.animation.LinearInterpolator;
 import android.view.animation.OvershootInterpolator;
+import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
@@ -35,6 +36,8 @@ public class MainActivity extends Activity implements GameView {
     private GestureDetectorCompat mDetector;
     private FrameLayout container;
     private TextView scoreTextView;
+    private Button undoButton;
+
     private TimeInterpolator overshotInterpolator = new OvershootInterpolator();
     private TimeInterpolator translateInterpolator = new LinearInterpolator();
 
@@ -49,6 +52,7 @@ public class MainActivity extends Activity implements GameView {
         mDetector = new GestureDetectorCompat(this, new MyGestureListener());
         container = (FrameLayout)findViewById(R.id.container);
         scoreTextView = (TextView)findViewById(R.id.score);
+        undoButton = (Button)findViewById(R.id.undo);
         container.post(new Runnable() { // after view loaded
             @Override
             public void run() {
@@ -58,6 +62,15 @@ public class MainActivity extends Activity implements GameView {
                 game.init();
             }
         });
+    }
+
+
+    public void restart(View view) {
+        game.init();
+    }
+
+    public void undo(View view) {
+        game.undo();
     }
 
     private void initMetrics() {
@@ -114,7 +127,17 @@ public class MainActivity extends Activity implements GameView {
     }
 
     @Override
-    public void render(List<Cell> cells) {
+    public void render() {
+        renderCells(game.getCells());
+        renderScore(game.getScore());
+        renderControls();
+    }
+
+    private void renderControls() {
+        undoButton.setEnabled(game.isUndoable());
+    }
+
+    private void renderCells(List<Cell> cells) {
         recycleViews();
 
         for (Cell cell : cells) {
@@ -131,13 +154,12 @@ public class MainActivity extends Activity implements GameView {
         container.removeAllViews();
     }
 
-    @Override
-    public void renderScore(int score) {
+    private void renderScore(int score) {
         int diff = score - oldScore;
         oldScore = score;
         scoreTextView.setText(score + "");
 
-        if (diff == 0)
+        if (diff <= 0)
             return;
         final TextView diffText = new TextView(this);
         diffText.setText("+" + diff);
@@ -238,4 +260,5 @@ public class MainActivity extends Activity implements GameView {
 
         return colors[index - 1];
     }
+
 }

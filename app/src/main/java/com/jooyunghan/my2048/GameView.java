@@ -6,6 +6,5 @@ import java.util.List;
  * Created by jooyung.han on 2014. 5. 9..
  */
 public interface GameView {
-    void render(List<Cell> cells);
-    void renderScore(int score);
+    void render();
 }

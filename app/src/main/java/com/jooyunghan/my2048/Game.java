@@ -10,17 +10,21 @@ public class Game {
     private Board board;
     private Random rand = new Random();
     private int score;
+    private boolean end = false;
+    private ArrayList<GameState> history = new ArrayList<GameState>();
 
     public Game(GameView view) {
         this.view = view;
     }
 
     public void init() {
-        this.board = new Board();
-        addNewTile();
-        addNewTile();
-        view.render(board.getCells());
+        board = new Board();
         score = 0;
+        end = false;
+        history.clear();
+        addNewTile();
+        addNewTile();
+        view.render();
     }
 
     private void addNewTile() {
@@ -47,19 +51,38 @@ public class Game {
 
         if (moveCount > 0) {
             addNewTile();
-            view.render(board.getCells());
-            view.renderScore(score);
+            end = !canMove();
+            view.render();
         }
+    }
+
+    private boolean canMove() {
+        return canMoveTo(Direction._X) || canMoveTo(Direction._Y);
+    }
+
+    private boolean canMoveTo(Direction direction) {
+        List<Cell> cells = board.getCells();
+        if (direction.positive()) {
+            Collections.reverse(cells);
+        }
+
+        for (Cell cell : cells) {
+            Position next = cell.position.next(direction);
+            Cell nextCell = board.get(next);
+            if (board.isEmpty(next) || (nextCell != null && nextCell.value == cell.value))
+                return true;
+        }
+        return false;
     }
 
     private int moveCell(Cell cell, Direction direction) {
         Position next = cell.position.next(direction);
+        Cell nextCell = board.get(next);
         if (board.isEmpty(next)) {
             moveCellTo(cell, next);
             return 1 + moveCell(cell, direction); // move further
-        } else if (cell.canMerge(board.get(next))) {
-            score += cell.value * 2;
-            mergeCellInto(cell, next);
+        } else if (nextCell != null && cell.canMerge(nextCell)) {
+            mergeCellInto(cell, nextCell);
             return 1;
         } else {
             return 0;
@@ -69,22 +92,37 @@ public class Game {
 
     private void moveCellTo(Cell cell, Position position) {
         board.put(cell.position, null);
-
         cell.position = position;
 
         board.put(position, cell);
     }
 
 
-    private void mergeCellInto(Cell cell, Position position) {
+    private void mergeCellInto(Cell cell, Cell nextCell) {
         board.put(cell.position, null);
+        cell.position = nextCell.position;
 
-        cell.position = position;
+        board.put(cell.position, Cell.merge(cell, nextCell));
 
-        board.put(position, Cell.merge(cell, board.get(position)));
+        score += cell.value * 2;
     }
 
+    public int getScore() {
+        return score;
+    }
 
+    public List<Cell> getCells() {
+        return board.getCells();
+    }
 
+    public boolean isEnd() {
+        return end;
+    }
 
+    public void undo() {
+    }
+
+    public boolean isUndoable() {
+        return history.size() > 0;
+    }
 }

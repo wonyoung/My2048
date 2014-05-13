@@ -30,6 +30,6 @@ public class Cell {
     }
 
     public boolean canMerge(Cell other) {
-        return other != null && value == other.value && other.prev != null;
+        return value == other.value && other.prev != null;
     }
 }
