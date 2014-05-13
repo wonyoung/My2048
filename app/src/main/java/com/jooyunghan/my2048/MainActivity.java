@@ -5,6 +5,7 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.TimeInterpolator;
 import android.app.Activity;
 import android.content.res.TypedArray;
+import android.graphics.Paint;
 import android.graphics.drawable.ShapeDrawable;
 import android.graphics.drawable.shapes.RoundRectShape;
 import android.os.Bundle;
@@ -43,6 +44,7 @@ public class MainActivity extends Activity implements GameView {
     private CellAnimator forwardAnimator = new ForwardAnimator();
     private CellAnimator reverseAnimator = new ReverseAnimator();
     private int[] colors;
+    private int[] textColors;
     private RoundRectShape roundRectShape;
     private int oldScore;
 
@@ -82,12 +84,18 @@ public class MainActivity extends Activity implements GameView {
     }
 
     private void loadColors() {
-        TypedArray ta = getResources().obtainTypedArray(R.array.colors);
-        colors = new int[ta.length()];
+        this.colors = loadColorResource(R.array.colors);
+        this.textColors = loadColorResource(R.array.text_colors);
+    }
+
+    private int[] loadColorResource(int colorsResource) {
+        TypedArray ta = getResources().obtainTypedArray(colorsResource);
+        int[] colors = new int[ta.length()];
         for (int i = 0; i < ta.length(); i++) {
             colors[i] = ta.getColor(i, 0);
         }
         ta.recycle();
+        return colors;
     }
 
     private void prepareBackground() {
@@ -196,23 +204,25 @@ public class MainActivity extends Activity implements GameView {
 
     private int indexOf(int value) {
         int index = 0;
-        while (value > 0 && index < colors.length) {
+        while (value > 2) {
             value >>= 1;
             index++;
         }
-        return index - 1;
+        return index;
     }
 
     private View viewFor(final int value) {
+        int index = indexOf(value);
+
         TextView view = new TextView(this);
-
-        view.setTextSize(TypedValue.COMPLEX_UNIT_PX, TEXT_SIZE);
+        view.setTextSize(TypedValue.COMPLEX_UNIT_PX, textSizeFor(value));
         view.setGravity(Gravity.CENTER);
-
+        view.setTextColor(textColorFor(index));
         view.setText(value + "");
+        view.setPaintFlags(Paint.FAKE_BOLD_TEXT_FLAG | Paint.ANTI_ALIAS_FLAG);
 
         ShapeDrawable bg = new ShapeDrawable(roundRectShape);
-        bg.getPaint().setColor(colorFor(value));
+        bg.getPaint().setColor(colorFor(index));
         view.setBackgroundDrawable(bg);
 
         return view;
@@ -222,8 +232,24 @@ public class MainActivity extends Activity implements GameView {
         container.addView(view, SIZE - PADDING * 2, SIZE - PADDING * 2);
     }
 
-    private int colorFor(int value) {
-        return colors[indexOf(value)];
+    private int textSizeFor(int value) {
+        if (value < 100) {
+            return TEXT_SIZE;
+        } else if (value < 1000) {
+            return TEXT_SIZE * 3 / 4;
+        } else if (value < 10000) {
+            return TEXT_SIZE * 2 / 3;
+        } else {
+            return TEXT_SIZE / 2;
+        }
+    }
+
+    private int textColorFor(int index) {
+        return textColors[Math.min(index, textColors.length - 1)];
+    }
+
+    private int colorFor(int index) {
+        return colors[Math.min(index, colors.length - 1)];
     }
 
     private class ForwardAnimator implements CellAnimator {
