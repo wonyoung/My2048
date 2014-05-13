@@ -16,6 +16,7 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewGroup.LayoutParams;
 import android.view.animation.LinearInterpolator;
 import android.view.animation.OvershootInterpolator;
 import android.widget.Button;
@@ -184,8 +185,8 @@ public class MainActivity extends Activity implements GameView {
                 parent.removeView(diffText);
             }
         });
-
-        parent.addView(diffText, 100, 100);
+        diffText.setLayoutParams(new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
+        parent.addView(diffText);
     }
 
     private void addCellView(Cell cell) {

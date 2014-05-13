@@ -95,8 +95,8 @@ public class Game {
 
     public void undo() {
         GameState last = history.remove(history.size() - 1);
-        view.renderUndo();
         this.score = last.score;
+        view.renderUndo(); // board is the delta. undo current delta and then set it to the previous
         this.board = last.board;
     }
 
