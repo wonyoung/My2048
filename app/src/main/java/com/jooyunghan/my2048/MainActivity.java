@@ -13,6 +13,7 @@ import android.support.v4.view.GestureDetectorCompat;
 import android.util.TypedValue;
 import android.view.GestureDetector;
 import android.view.Gravity;
+import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -21,6 +22,7 @@ import android.view.animation.LinearInterpolator;
 import android.view.animation.OvershootInterpolator;
 import android.widget.Button;
 import android.widget.FrameLayout;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import java.util.List;
@@ -54,7 +56,7 @@ public class MainActivity extends Activity implements GameView {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         mDetector = new GestureDetectorCompat(this, new MyGestureListener());
-        container = (FrameLayout)findViewById(R.id.container);
+        container = (FrameLayout)findViewById(R.id.container2);
         scoreTextView = (TextView)findViewById(R.id.score);
         undoButton = (Button)findViewById(R.id.undo);
         container.post(new Runnable() { // after view loaded
@@ -78,10 +80,17 @@ public class MainActivity extends Activity implements GameView {
     }
 
     private void initMetrics() {
+        int width = Math.min(container.getWidth(), container.getHeight());
+
         SIZE = container.getWidth() / 4;
         PADDING = SIZE / 20;
         TEXT_SIZE = SIZE / 2;
         ROUND_RADIUS = SIZE / 10;
+
+        RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(width, width);
+        lp.addRule(RelativeLayout.CENTER_IN_PARENT);
+        lp.addRule(RelativeLayout.ALIGN_PARENT_TOP);
+        container.setLayoutParams(lp);
     }
 
     private void loadColors() {
@@ -169,24 +178,27 @@ public class MainActivity extends Activity implements GameView {
         oldScore = score;
         scoreTextView.setText(score + "");
 
-        if (diff <= 0)
-            return;
-        final TextView diffText = new TextView(this);
-        diffText.setText("+" + diff);
+        if (diff > 0)
+            showIncrease(diff);
+    }
 
-        float textSize = scoreTextView.getTextSize();
-        diffText.setTextSize(TypedValue.COMPLEX_UNIT_PX, textSize);
-        final ViewGroup parent = (ViewGroup) scoreTextView.getParent();
-        diffText.setY(scoreTextView.getY());
-        diffText.setX(scoreTextView.getX());
-        diffText.animate().yBy(- textSize * 2).alpha(0f).setListener(new AnimatorListenerAdapter() {
-            @Override
-            public void onAnimationEnd(Animator animation) {
-                parent.removeView(diffText);
-            }
-        });
-        diffText.setLayoutParams(new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
-        parent.addView(diffText);
+    private void showIncrease(int diff) {
+        final ViewGroup parent = (ViewGroup)scoreTextView.getParent();
+        final View deltaView = LayoutInflater.from(this).inflate(R.layout.score_delta, parent, false);
+
+        final TextView textView = (TextView)deltaView.findViewById(R.id.delta);
+        textView.setText("+" + diff);
+
+        deltaView.setX(scoreTextView.getRight());
+        deltaView.setY(scoreTextView.getTop());
+        deltaView.animate().setDuration(300).yBy(- scoreTextView.getHeight() * 2).alpha(0f).setListener(
+                new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        parent.removeView(deltaView);
+                    }
+                });
+        parent.addView(deltaView);
     }
 
     private void addCellView(Cell cell) {

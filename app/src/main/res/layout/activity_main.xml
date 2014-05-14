@@ -56,14 +56,27 @@
         android:background="@android:color/transparent"
         android:textColor="@color/abc_search_url_text_normal" />
 
-    <FrameLayout
+    <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:id="@+id/container"
         android:layout_alignParentLeft="true"
         android:layout_alignParentRight="true"
         android:layout_alignParentBottom="true"
-        android:layout_below="@+id/score"></FrameLayout>
+        android:layout_below="@+id/score">
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#ffafa191"
+            android:layout_alignParentTop="false"
+            android:layout_marginTop="0dp"
+            android:id="@+id/container2"
+            android:layout_alignParentStart="false"
+            android:layout_alignParentEnd="false"
+            android:layout_centerInParent="true">
+        </FrameLayout>
+    </RelativeLayout>
 
 
 </RelativeLayout>
