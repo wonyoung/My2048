@@ -137,7 +137,7 @@ public class Qube extends Shape {
         ByteBuffer tempBuffer = ByteBuffer.allocateDirect(8*3 * 4);
         tempBuffer.order(ByteOrder.nativeOrder());
         FloatBuffer buffer = tempBuffer.asFloatBuffer();
-        for (float _z : new float[] { -0.5f, -0.1f }) {
+        for (float _z : new float[] { -0.5f, 0.0f }) {
             for (float _y : new float[]{0.5f, 1.0f}) {
                 for (float _x : new float[]{-1.0f, -0.5f}) {
                     buffer.put(_x+0.5f*x);

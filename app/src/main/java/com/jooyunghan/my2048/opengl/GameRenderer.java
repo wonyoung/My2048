@@ -26,6 +26,7 @@ import javax.microedition.khronos.opengles.GL10;
  * Created by wonyoung.jang on 2014-05-16.
  */
 public class GameRenderer implements GLSurfaceView.Renderer, GameView {
+    private static final int BLANK = 10;
     private float xAngle = 45;
     private float yAngle = 45;
 
@@ -184,8 +185,15 @@ public class GameRenderer implements GLSurfaceView.Renderer, GameView {
 
     @Override
     public void onSurfaceChanged(GL10 gl, int width, int height) {
-        int min = Math.min(width, height);
-        gl.glViewport(0, 0, min, min);
+        if (width > height) {
+            int xStart = (width - height)/2;
+            gl.glViewport(xStart, 0, height, height);
+        }
+        else {
+            int yStart = (height - width)/2;
+            gl.glViewport(0, yStart, width, width);
+        }
+
         initMetrics();
     }
 
@@ -194,6 +202,9 @@ public class GameRenderer implements GLSurfaceView.Renderer, GameView {
         gl.glClear(GL10.GL_COLOR_BUFFER_BIT | GL10.GL_DEPTH_BUFFER_BIT);
         gl.glMatrixMode(GL10.GL_MODELVIEW);
         gl.glLoadIdentity();
+        gl.glRotatef(10.0f, 1, 0, 0);
+        gl.glRotatef(10.0f, 0, 1, 0);
+        gl.glScalef(0.8f,0.8f,0.8f);
 
         for (Qube qube : qubes) {
             qube.draw(gl);
