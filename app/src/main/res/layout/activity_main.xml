@@ -58,12 +58,20 @@
 
     <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="wrap_content"
         android:id="@+id/container"
         android:layout_alignParentLeft="true"
         android:layout_alignParentRight="true"
-        android:layout_alignParentBottom="true"
+        android:layout_above="@+id/glcontainer"
         android:layout_below="@+id/score"></FrameLayout>
 
-
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="260dp"
+        android:id="@+id/glcontainer"
+        android:layout_gravity="center"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true"></FrameLayout>
 </RelativeLayout>

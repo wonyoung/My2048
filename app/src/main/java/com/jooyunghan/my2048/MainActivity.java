@@ -23,6 +23,9 @@ import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
+import com.jooyunghan.my2048.opengl.GameRenderer;
+import com.jooyunghan.my2048.opengl.GameSurfaceView;
+
 import java.util.List;
 
 
@@ -48,6 +51,8 @@ public class MainActivity extends Activity implements GameView {
     private int[] textColors;
     private RoundRectShape roundRectShape;
     private int oldScore;
+    private GameRenderer glGameRenderer;
+    private GameSurfaceView gameSurfaceView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,6 +71,11 @@ public class MainActivity extends Activity implements GameView {
                 game.init();
             }
         });
+
+        FrameLayout glContainer = (FrameLayout) findViewById(R.id.glcontainer);
+        glGameRenderer = new GameRenderer(this, game);
+        gameSurfaceView = new GameSurfaceView(this, glGameRenderer);
+        glContainer.addView(gameSurfaceView);
     }
 
 
@@ -78,7 +88,7 @@ public class MainActivity extends Activity implements GameView {
     }
 
     private void initMetrics() {
-        SIZE = container.getWidth() / 4;
+        SIZE = Math.min(container.getWidth(), container.getHeight()) / 4;
         PADDING = SIZE / 20;
         TEXT_SIZE = SIZE / 2;
         ROUND_RADIUS = SIZE / 10;
@@ -140,6 +150,8 @@ public class MainActivity extends Activity implements GameView {
     public void render() {
         animator = forwardAnimator;
         renderCells(game.getCells());
+        glGameRenderer.render();
+        gameSurfaceView.requestRender();
         renderScore(game.getScore());
         renderControls();
     }
@@ -148,6 +160,8 @@ public class MainActivity extends Activity implements GameView {
     public void renderUndo() {
         animator = reverseAnimator;
         renderCells(game.getCells());
+        glGameRenderer.renderUndo();
+        gameSurfaceView.requestRender();
         renderScore(game.getScore());
         renderControls();
     }
