@@ -45,6 +45,10 @@ public class GameRenderer implements GLSurfaceView.Renderer, GameView {
     private RoundRectShape roundRectShape;
     private Game game;
 
+    private QubeAnimator animator;
+    private QubeAnimator forwardAnimator = new ForwardAnimator();
+    private QubeAnimator backwardAnimator = new BackwardAnimator();
+
     public GameRenderer(Context context, Game game) {
         this.game = game;
         loadColors(context);
@@ -130,9 +134,8 @@ public class GameRenderer implements GLSurfaceView.Renderer, GameView {
 
         mBitmap = Bitmap.createBitmap(256, 256, config);
         mCanvas = new Canvas(mBitmap);
-        mBitmap.eraseColor(0);
-
-
+//        mBitmap.eraseColor(0);
+//
         mCanvas.drawColor(Color.WHITE);
         Paint bgPaint = new Paint();
         bgPaint.setColor(colorFor(index));
@@ -140,7 +143,7 @@ public class GameRenderer implements GLSurfaceView.Renderer, GameView {
 
         Paint Pnt = new Paint();
         Pnt.setColor(textColorFor(index));
-        Pnt.setTextSize(128);
+        Pnt.setTextSize(textSizeFor(number));
         Pnt.setAntiAlias(true);
         Pnt.setTextAlign(Paint.Align.CENTER);
         Pnt.setTextScaleX(1);
@@ -148,21 +151,25 @@ public class GameRenderer implements GLSurfaceView.Renderer, GameView {
         mCanvas.drawText(String.valueOf(number), 128, 160, Pnt);
 
         GLUtils.texImage2D(GL10.GL_TEXTURE_2D, 0, mBitmap, 0);
-
         mBitmap.recycle();
-
-    }
-    private int textColorFor(int index) {
-        return textColors[Math.min(index, textColors.length - 1)];
     }
 
-    private int colorFor(int index) {
-        return colors[Math.min(index, colors.length - 1)];
+    private int textSizeFor(int value) {
+        final int defaultFontSize = 128;
+
+        if (value < 100) {
+            return defaultFontSize;
+        } else if (value < 1000) {
+            return defaultFontSize * 3 / 4;
+        } else if (value < 10000) {
+            return defaultFontSize * 2 / 3;
+        } else {
+            return defaultFontSize / 2;
+        }
     }
 
     @Override
     public void onSurfaceCreated(GL10 gl, EGLConfig config) {
-//        gl.glClearColor(0, 1, 0, 0.5f);
         gl.glHint(GL10.GL_PERSPECTIVE_CORRECTION_HINT, GL10.GL_FASTEST);
 
         gl.glClearColor(1.0f,1.0f,1.0f,1);
@@ -181,7 +188,6 @@ public class GameRenderer implements GLSurfaceView.Renderer, GameView {
             createTexture(gl, value);
         }
     }
-
 
     @Override
     public void onSurfaceChanged(GL10 gl, int width, int height) {
@@ -213,11 +219,13 @@ public class GameRenderer implements GLSurfaceView.Renderer, GameView {
 
     @Override
     public void render() {
+        animator = forwardAnimator;
         renderCells(game.getCells());
     }
 
     @Override
     public void renderUndo() {
+        animator = backwardAnimator;
         renderCells(game.getCells());
     }
 
@@ -233,15 +241,29 @@ public class GameRenderer implements GLSurfaceView.Renderer, GameView {
     }
 
     private void addCellQube(Cell cell) {
-//        for (Cell old : cell.merged) {
-//            addCellQube(old);
-//        }
+        for (Cell old : cell.merged) {
+            addMergedCellQube(old);
+        }
 
         Qube qube = new Qube(mTextures[indexOf(cell.value)]);
         if (cell.previous != null) {
-            setTransition(qube, cell);
+            animator.setTransition(qube, cell);
         } else {
-            setShow(qube, cell);
+            animator.setShow(qube, cell);
+        }
+        add(qube);
+    }
+
+    private void addMergedCellQube(Cell cell) {
+        for (Cell old : cell.merged) {
+            addMergedCellQube(old);
+        }
+
+        Qube qube = new Qube(mTextures[indexOf(cell.value)]);
+        if (cell.previous != null) {
+            animator.setShowAndTransition(qube, cell);
+        } else {
+            animator.setShow(qube, cell);
         }
         add(qube);
     }
@@ -250,11 +272,45 @@ public class GameRenderer implements GLSurfaceView.Renderer, GameView {
         qubes.add(qube);
     }
 
-    private void setShow(Qube qube, Cell cell) {
-        setTransition(qube, cell);
+    private int textColorFor(int index) {
+        return textColors[Math.min(index, textColors.length - 1)];
     }
 
-    private void setTransition(Qube qube, Cell cell) {
-        qube.setPosition(cell.position.x, cell.position.y);
+    private int colorFor(int index) {
+        return colors[Math.min(index, colors.length - 1)];
+    }
+
+    private class ForwardAnimator implements QubeAnimator {
+        @Override
+        public void setTransition(Qube qube, Cell cell) {
+            qube.move(cell.previous.x, cell.previous.y, cell.position.x, cell.position.y);
+        }
+
+        @Override
+        public void setShow(Qube qube, Cell cell) {
+            qube.show(cell.position.x, cell.position.y);
+        }
+
+        @Override
+        public void setShowAndTransition(Qube qube, Cell cell) {
+            qube.hide(cell.position.x, cell.position.y);
+        }
+    }
+
+    private class BackwardAnimator implements QubeAnimator {
+        @Override
+        public void setTransition(Qube qube, Cell cell) {
+            qube.move(cell.position.x, cell.position.y, cell.previous.x, cell.previous.y);
+        }
+
+        @Override
+        public void setShow(Qube qube, Cell cell) {
+            qube.hide(cell.position.x, cell.position.y);
+        }
+
+        @Override
+        public void setShowAndTransition(Qube qube, Cell cell) {
+            qube.move(cell.position.x, cell.position.y, cell.previous.x, cell.previous.y);
+        }
     }
 }

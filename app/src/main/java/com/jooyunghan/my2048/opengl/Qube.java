@@ -149,4 +149,16 @@ public class Qube extends Shape {
         buffer.position(0);
         return buffer;
     }
+
+    public void move(int fromX, int fromY, int toX, int toY) {
+        setPosition(toX, toY);
+    }
+
+    public void show(int x, int y) {
+        setPosition(x, y);
+    }
+
+    public void hide(int x, int y) {
+        vertbuf = toBuffer(new float [] {0.0f, 0.0f, 0.0f});
+    }
 }
