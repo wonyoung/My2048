@@ -30,10 +30,9 @@ public class GameRenderer implements GLSurfaceView.Renderer, GameView {
     private float xAngle = 45;
     private float yAngle = 45;
 
-    private int ROUND_RADIUS = 30;
-    private int SIZE = 150;
-    private int PADDING = 5;
-    private int TEXT_SIZE = 30;
+    private static final int SIZE = 256;
+    private static final int PADDING = SIZE / 20;
+    private static final int ROUND_RADIUS = SIZE / 10;
 
     private int height;
 
@@ -70,11 +69,8 @@ public class GameRenderer implements GLSurfaceView.Renderer, GameView {
     }
 
     private void initMetrics() {
-        SIZE = height / 4;
-        PADDING = SIZE / 20;
-        TEXT_SIZE = SIZE / 2;
-        ROUND_RADIUS = SIZE / 10;
     }
+
     private int indexOf(int value) {
         int index = 0;
         while (value > 2) {
@@ -87,33 +83,7 @@ public class GameRenderer implements GLSurfaceView.Renderer, GameView {
     private void createTexture(GL10 gl, int number) {
         int index = indexOf(number);
 
-
-//        Bitmap bitmap = Bitmap.createBitmap(64, 64, Bitmap.Config.ARGB_4444);
-//        Canvas canvas = new Canvas(bitmap);
-//        bitmap.eraseColor(0);
-//
-//        Paint textPaint = new Paint();
-//        textPaint.setTextSize( 18 );
-//        textPaint.setAntiAlias( true );
-//        textPaint.setARGB( 0xff, 0xff, 0xff, 0xff );
-//        textPaint.setTextAlign( Paint.Align.LEFT );
-//        textPaint.setTextScaleX( 0.5f );
-//        canvas.drawColor(0x00ffffff);
-//        canvas.drawText( "2", 0.f, 15.f , textPaint);
-//
-//        gl.glGenTextures( 1, mTextures, 0 );
-//        gl.glBindTexture( GL10.GL_TEXTURE_2D, mTextures[ 0 ] );
-//
-//        gl.glTexParameterf( GL10.GL_TEXTURE_2D, GL10.GL_TEXTURE_MIN_FILTER, GL10.GL_NEAREST );
-//        gl.glTexParameterf( GL10.GL_TEXTURE_2D, GL10.GL_TEXTURE_MAG_FILTER, GL10.GL_LINEAR );
-//
-//        gl.glTexParameterf( GL10.GL_TEXTURE_2D, GL10.GL_TEXTURE_WRAP_S, GL10.GL_REPEAT );
-//        gl.glTexParameterf( GL10.GL_TEXTURE_2D, GL10.GL_TEXTURE_WRAP_T, GL10.GL_REPEAT );
-//
-//        GLUtils.texImage2D(GL10.GL_TEXTURE_2D, 0, bitmap, 0);
-//        bitmap.recycle();
         gl.glBindTexture(GL10.GL_TEXTURE_2D, mTextures[index]);
-
         gl.glTexParameterf(GL10.GL_TEXTURE_2D, GL10.GL_TEXTURE_MIN_FILTER,
                 GL10.GL_NEAREST);
         gl.glTexParameterf(GL10.GL_TEXTURE_2D,
@@ -123,23 +93,30 @@ public class GameRenderer implements GLSurfaceView.Renderer, GameView {
                 GL10.GL_CLAMP_TO_EDGE);
         gl.glTexParameterf(GL10.GL_TEXTURE_2D, GL10.GL_TEXTURE_WRAP_T,
                 GL10.GL_CLAMP_TO_EDGE);
+//        gl.glTexParameterf( GL10.GL_TEXTURE_2D, GL10.GL_TEXTURE_WRAP_S, GL10.GL_REPEAT );
+//        gl.glTexParameterf( GL10.GL_TEXTURE_2D, GL10.GL_TEXTURE_WRAP_T, GL10.GL_REPEAT );
         gl.glTexEnvf(GL10.GL_TEXTURE_ENV, GL10.GL_TEXTURE_ENV_MODE,
                 GL10.GL_REPLACE);
 
-        Bitmap mBitmap;
+        Bitmap mBitmap = createBitmapNumber(number);
+        GLUtils.texImage2D(GL10.GL_TEXTURE_2D, 0, mBitmap, 0);
+        mBitmap.recycle();
+    }
 
-        Canvas mCanvas;
+    private Bitmap createBitmapNumber(int number) {
+        Bitmap mBitmap;
+        int index = indexOf(number);
 
         Bitmap.Config config =   Bitmap.Config.ARGB_8888;
 
-        mBitmap = Bitmap.createBitmap(256, 256, config);
-        mCanvas = new Canvas(mBitmap);
-//        mBitmap.eraseColor(0);
-//
+        mBitmap = Bitmap.createBitmap(SIZE, SIZE, config);
+        Canvas mCanvas = new Canvas(mBitmap);
+
         mCanvas.drawColor(Color.WHITE);
+
         Paint bgPaint = new Paint();
         bgPaint.setColor(colorFor(index));
-        mCanvas.drawRoundRect(new RectF(16,16,240,240),256/10,256/10, bgPaint);
+        mCanvas.drawRoundRect(new RectF(PADDING, PADDING, SIZE - PADDING, SIZE - PADDING), ROUND_RADIUS, ROUND_RADIUS, bgPaint);
 
         Paint Pnt = new Paint();
         Pnt.setColor(textColorFor(index));
@@ -147,11 +124,9 @@ public class GameRenderer implements GLSurfaceView.Renderer, GameView {
         Pnt.setAntiAlias(true);
         Pnt.setTextAlign(Paint.Align.CENTER);
         Pnt.setTextScaleX(1);
+        mCanvas.drawText(String.valueOf(number), SIZE/2, SIZE/2+textSizeFor(number)/4, Pnt);
 
-        mCanvas.drawText(String.valueOf(number), 128, 160, Pnt);
-
-        GLUtils.texImage2D(GL10.GL_TEXTURE_2D, 0, mBitmap, 0);
-        mBitmap.recycle();
+        return mBitmap;
     }
 
     private int textSizeFor(int value) {
@@ -191,14 +166,20 @@ public class GameRenderer implements GLSurfaceView.Renderer, GameView {
 
     @Override
     public void onSurfaceChanged(GL10 gl, int width, int height) {
+        int xStart;
+        int yStart;
+        int viewSize;
         if (width > height) {
-            int xStart = (width - height)/2;
-            gl.glViewport(xStart, 0, height, height);
+            xStart = (width - height)/2;
+            yStart = 0;
+            viewSize = height;
         }
         else {
-            int yStart = (height - width)/2;
-            gl.glViewport(0, yStart, width, width);
+            xStart = 0;
+            yStart = (height - width)/2;
+            viewSize = width;
         }
+        gl.glViewport(xStart, yStart, viewSize, viewSize);
 
         initMetrics();
     }
