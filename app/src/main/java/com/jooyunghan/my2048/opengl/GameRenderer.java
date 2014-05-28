@@ -27,8 +27,8 @@ import javax.microedition.khronos.opengles.GL10;
  */
 public class GameRenderer implements GLSurfaceView.Renderer, GameView {
     private static final int BLANK = 10;
-    private float xAngle = 45;
-    private float yAngle = 45;
+    private float xAngle = 0;
+    private float yAngle = 0;
 
     private static final int SIZE = 256;
     private static final int PADDING = SIZE / 20;
@@ -38,15 +38,15 @@ public class GameRenderer implements GLSurfaceView.Renderer, GameView {
 
     private int[] colors;
     private int[] textColors;
-    private ArrayList<Qube> qubes = new ArrayList<Qube>();
+    private ArrayList<Cube> qubes = new ArrayList<Cube>();
     private int[] mTextures = new int[20];
 
     private RoundRectShape roundRectShape;
     private Game game;
 
-    private QubeAnimator animator;
-    private QubeAnimator forwardAnimator = new ForwardAnimator();
-    private QubeAnimator backwardAnimator = new BackwardAnimator();
+    private CubeAnimator animator;
+    private CubeAnimator forwardAnimator = new ForwardAnimator();
+    private CubeAnimator backwardAnimator = new BackwardAnimator();
 
     public GameRenderer(Context context, Game game) {
         this.game = game;
@@ -89,14 +89,14 @@ public class GameRenderer implements GLSurfaceView.Renderer, GameView {
         gl.glTexParameterf(GL10.GL_TEXTURE_2D,
                 GL10.GL_TEXTURE_MAG_FILTER,
                 GL10.GL_LINEAR);
-        gl.glTexParameterf(GL10.GL_TEXTURE_2D, GL10.GL_TEXTURE_WRAP_S,
-                GL10.GL_CLAMP_TO_EDGE);
-        gl.glTexParameterf(GL10.GL_TEXTURE_2D, GL10.GL_TEXTURE_WRAP_T,
-                GL10.GL_CLAMP_TO_EDGE);
+//        gl.glTexParameterf(GL10.GL_TEXTURE_2D, GL10.GL_TEXTURE_WRAP_S,
+//                GL10.GL_CLAMP_TO_EDGE);
+//        gl.glTexParameterf(GL10.GL_TEXTURE_2D, GL10.GL_TEXTURE_WRAP_T,
+//                GL10.GL_CLAMP_TO_EDGE);
 //        gl.glTexParameterf( GL10.GL_TEXTURE_2D, GL10.GL_TEXTURE_WRAP_S, GL10.GL_REPEAT );
 //        gl.glTexParameterf( GL10.GL_TEXTURE_2D, GL10.GL_TEXTURE_WRAP_T, GL10.GL_REPEAT );
-        gl.glTexEnvf(GL10.GL_TEXTURE_ENV, GL10.GL_TEXTURE_ENV_MODE,
-                GL10.GL_REPLACE);
+//        gl.glTexEnvf(GL10.GL_TEXTURE_ENV, GL10.GL_TEXTURE_ENV_MODE,
+//                GL10.GL_REPLACE);
 
         Bitmap mBitmap = createBitmapNumber(number);
         GLUtils.texImage2D(GL10.GL_TEXTURE_2D, 0, mBitmap, 0);
@@ -145,18 +145,19 @@ public class GameRenderer implements GLSurfaceView.Renderer, GameView {
 
     @Override
     public void onSurfaceCreated(GL10 gl, EGLConfig config) {
-        gl.glHint(GL10.GL_PERSPECTIVE_CORRECTION_HINT, GL10.GL_FASTEST);
-
-        gl.glClearColor(1.0f,1.0f,1.0f,1);
-        gl.glEnableClientState(GL10.GL_VERTEX_ARRAY);
-        gl.glEnableClientState(GL10.GL_COLOR_ARRAY);
+        gl.glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+        gl.glClearDepthf(1.0f);
         gl.glEnable(GL10.GL_DEPTH_TEST);
+        gl.glDepthFunc(GL10.GL_LEQUAL);
+        gl.glHint(GL10.GL_PERSPECTIVE_CORRECTION_HINT, GL10.GL_NICEST);
+        gl.glShadeModel(GL10.GL_SMOOTH);
+        gl.glDisable(GL10.GL_DITHER);
 
         initTexture(gl);
+        gl.glEnable(GL10.GL_TEXTURE_2D);
     }
 
     private void initTexture(GL10 gl) {
-
         gl.glGenTextures(mTextures.length, mTextures, 0);
 
         for (int value = 2; value <=8192; value*=2) {
@@ -187,15 +188,18 @@ public class GameRenderer implements GLSurfaceView.Renderer, GameView {
     @Override
     public void onDrawFrame(GL10 gl) {
         gl.glClear(GL10.GL_COLOR_BUFFER_BIT | GL10.GL_DEPTH_BUFFER_BIT);
-        gl.glMatrixMode(GL10.GL_MODELVIEW);
-        gl.glLoadIdentity();
-        gl.glRotatef(10.0f, 1, 0, 0);
-        gl.glRotatef(10.0f, 0, 1, 0);
-        gl.glScalef(0.8f,0.8f,0.8f);
+        gl.glMatrixMode(GL10.GL_PROJECTION);
 
-        for (Qube qube : qubes) {
-            qube.draw(gl);
+        gl.glLoadIdentity();
+        gl.glScalef(0.8f,0.8f,0.5f);
+        gl.glRotatef(xAngle, 0, 1, 0);
+        gl.glRotatef(yAngle, 1, 0, 0);
+
+        for (Cube cube : qubes) {
+            cube.draw(gl);
         }
+
+
     }
 
     @Override
@@ -226,13 +230,13 @@ public class GameRenderer implements GLSurfaceView.Renderer, GameView {
             addMergedCellQube(old);
         }
 
-        Qube qube = new Qube(mTextures[indexOf(cell.value)]);
+        Cube cube = new Cube(mTextures[indexOf(cell.value)]);
         if (cell.previous != null) {
-            animator.setTransition(qube, cell);
+            animator.setTransition(cube, cell);
         } else {
-            animator.setShow(qube, cell);
+            animator.setShow(cube, cell);
         }
-        add(qube);
+        add(cube);
     }
 
     private void addMergedCellQube(Cell cell) {
@@ -240,7 +244,7 @@ public class GameRenderer implements GLSurfaceView.Renderer, GameView {
             addMergedCellQube(old);
         }
 
-        Qube qube = new Qube(mTextures[indexOf(cell.value)]);
+        Cube qube = new Cube(mTextures[indexOf(cell.value)]);
         if (cell.previous != null) {
             animator.setShowAndTransition(qube, cell);
         } else {
@@ -249,7 +253,7 @@ public class GameRenderer implements GLSurfaceView.Renderer, GameView {
         add(qube);
     }
 
-    private void add(Qube qube) {
+    private void add(Cube qube) {
         qubes.add(qube);
     }
 
@@ -261,37 +265,42 @@ public class GameRenderer implements GLSurfaceView.Renderer, GameView {
         return colors[Math.min(index, colors.length - 1)];
     }
 
-    private class ForwardAnimator implements QubeAnimator {
+    public void adjustAngle(float dx, float dy) {
+        xAngle += dx;
+        yAngle += dy;
+    }
+
+    private class ForwardAnimator implements CubeAnimator {
         @Override
-        public void setTransition(Qube qube, Cell cell) {
-            qube.move(cell.previous.x, cell.previous.y, cell.position.x, cell.position.y);
+        public void setTransition(Cube cube, Cell cell) {
+            cube.move(cell.previous.x, cell.previous.y, cell.position.x, cell.position.y);
         }
 
         @Override
-        public void setShow(Qube qube, Cell cell) {
-            qube.show(cell.position.x, cell.position.y);
+        public void setShow(Cube cube, Cell cell) {
+            cube.show(cell.position.x, cell.position.y);
         }
 
         @Override
-        public void setShowAndTransition(Qube qube, Cell cell) {
-            qube.hide(cell.position.x, cell.position.y);
+        public void setShowAndTransition(Cube cube, Cell cell) {
+            cube.hide(cell.position.x, cell.position.y);
         }
     }
 
-    private class BackwardAnimator implements QubeAnimator {
+    private class BackwardAnimator implements CubeAnimator {
         @Override
-        public void setTransition(Qube qube, Cell cell) {
-            qube.move(cell.position.x, cell.position.y, cell.previous.x, cell.previous.y);
+        public void setTransition(Cube cube, Cell cell) {
+            cube.move(cell.position.x, cell.position.y, cell.previous.x, cell.previous.y);
         }
 
         @Override
-        public void setShow(Qube qube, Cell cell) {
-            qube.hide(cell.position.x, cell.position.y);
+        public void setShow(Cube cube, Cell cell) {
+            cube.hide(cell.position.x, cell.position.y);
         }
 
         @Override
-        public void setShowAndTransition(Qube qube, Cell cell) {
-            qube.move(cell.position.x, cell.position.y, cell.previous.x, cell.previous.y);
+        public void setShowAndTransition(Cube cube, Cell cell) {
+            cube.move(cell.position.x, cell.position.y, cell.previous.x, cell.previous.y);
         }
     }
 }

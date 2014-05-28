@@ -32,7 +32,16 @@
         android:layout_centerHorizontal="true"
         android:layout_below="@+id/textView">
     </TextView>
-
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="view"
+        android:id="@+id/debug"
+        android:src="@android:drawable/ic_menu_revert"
+        android:onClick="debug"
+        android:layout_toLeftOf="@+id/undo"
+        android:background="@android:color/transparent"
+        android:textColor="@color/abc_search_url_text_normal" />
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

@@ -37,6 +37,7 @@ public class MainActivity extends Activity implements GameView {
     private int TEXT_SIZE = 30;
     private final Game game = new Game(this);
     private GestureDetectorCompat mDetector;
+    private GestureDetectorCompat mMoveGestureDetector;
     private FrameLayout container;
     private TextView scoreTextView;
     private Button undoButton;
@@ -54,11 +55,30 @@ public class MainActivity extends Activity implements GameView {
     private GameRenderer glGameRenderer;
     private GameSurfaceView gameSurfaceView;
 
+            public static final int DRAGSPEED = 5;
+            public float oldx;
+            public float oldy;
+
+            public boolean onTouchEventViewChanger(MotionEvent event) {
+                float x = event.getX();
+                float y = event.getY();
+
+                if (event.getAction() == MotionEvent.ACTION_MOVE) {
+                    float dx = (oldx - x) / DRAGSPEED;
+                    float dy = (oldy - y) / DRAGSPEED;
+                    glGameRenderer.adjustAngle(dx, dy);
+                    gameSurfaceView.requestRender();
+                }
+                oldx = x;
+                oldy = y;
+                return true;
+            }
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        mDetector = new GestureDetectorCompat(this, new MyGestureListener());
+        mMoveGestureDetector = new GestureDetectorCompat(this, new MyGestureListener());
+        mDetector = mMoveGestureDetector;
         container = (FrameLayout)findViewById(R.id.container);
         scoreTextView = (TextView)findViewById(R.id.score);
         undoButton = (Button)findViewById(R.id.undo);
@@ -85,6 +105,13 @@ public class MainActivity extends Activity implements GameView {
 
     public void undo(View view) {
         game.undo();
+    }
+
+    public void debug(View view) {
+        if (mDetector == null)
+            mDetector = mMoveGestureDetector;
+        else
+            mDetector = null;
     }
 
     private void initMetrics() {
@@ -117,8 +144,11 @@ public class MainActivity extends Activity implements GameView {
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        this.mDetector.onTouchEvent(event);
-        return super.onTouchEvent(event);
+        if (mDetector == null) {
+            return onTouchEventViewChanger(event);
+        } else {
+            return mDetector.onTouchEvent(event);
+        }
     }
 
     class MyGestureListener extends GestureDetector.SimpleOnGestureListener {
